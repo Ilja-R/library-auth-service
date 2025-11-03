@@ -3,6 +3,7 @@ package usercreater
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/Ilja-R/library-auth-service/internal/config"
 	"github.com/Ilja-R/library-auth-service/internal/domain"
@@ -12,14 +13,16 @@ import (
 )
 
 type UseCase struct {
-	cfg         *config.Config
-	userStorage driven.UserStorage
+	cfg              *config.Config
+	userStorage      driven.UserStorage
+	messagePublisher driven.MessagePublisher
 }
 
-func New(cfg *config.Config, userStorage driven.UserStorage) *UseCase {
+func New(cfg *config.Config, userStorage driven.UserStorage, publisher driven.MessagePublisher) *UseCase {
 	return &UseCase{
-		cfg:         cfg,
-		userStorage: userStorage,
+		cfg:              cfg,
+		userStorage:      userStorage,
+		messagePublisher: publisher,
 	}
 }
 
@@ -45,6 +48,19 @@ func (u *UseCase) CreateUser(ctx context.Context, user domain.User) (err error) 
 	// Добавить пользователя в бд
 	if err = u.userStorage.CreateUser(ctx, user); err != nil {
 		return err
+	}
+
+	// Publish message to message broker
+	if u.messagePublisher != nil {
+		message := domain.Message{
+			Recipient: user.Username,
+			Subject:   fmt.Sprintf("Welcome, %s!", user.FullName),
+			Body:      fmt.Sprintf("Hello, %s! Your account has been created successfully.", user.FullName),
+		}
+		if err = u.messagePublisher.PublishMessage(message); err != nil {
+			// Just log the error as a demo behavior
+			fmt.Println(err)
+		}
 	}
 
 	return nil

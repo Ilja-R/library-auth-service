@@ -11,6 +11,7 @@ type Config struct {
 	HTTPPort   string     `env:"HTTP_PORT" default:"8284"`
 	Postgres   *Postgres  `env:",prefix=POSTGRES_"`
 	AuthParams AuthParams `env:",prefix=JWT_"`
+	RabbitMQ   RabbitMQ   `env:",prefix=RABBITMQ_"`
 }
 
 type AuthParams struct {
@@ -29,6 +30,13 @@ type Postgres struct {
 	MaxIdleConnections    int           `env:"MAX_IDLE_CONNECTIONS" default:"25"`
 	MaxOpenConnections    int           `env:"MAX_OPEN_CONNECTIONS" default:"25"`
 	ConnectionMaxLifetime time.Duration `env:"CONNECTION_MAX_LIFETIME" default:"5m"`
+}
+
+type RabbitMQ struct {
+	Host     string `env:"HOST" default:"localhost"`
+	Port     int    `env:"PORT" default:"5673"`
+	User     string `env:"USER" default:"guest"`
+	Password string `env:"PASSWORD" default:"guest"`
 }
 
 func (c *Postgres) ConnectionURL() string {

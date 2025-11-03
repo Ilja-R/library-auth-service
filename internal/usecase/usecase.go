@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"github.com/Ilja-R/library-auth-service/internal/adapter/driven/broker"
 	"github.com/Ilja-R/library-auth-service/internal/adapter/driven/dbstore"
 	"github.com/Ilja-R/library-auth-service/internal/config"
 	"github.com/Ilja-R/library-auth-service/internal/port/usecase"
@@ -13,9 +14,9 @@ type UseCases struct {
 	Authenticator usecase.Authenticate
 }
 
-func New(cfg config.Config, store *dbstore.DBStore) *UseCases {
+func New(cfg config.Config, store *dbstore.DBStore, publisher *broker.MessagePublisher) *UseCases {
 	return &UseCases{
-		UserCreater:   usercreater.New(&cfg, store.UserStorage),
+		UserCreater:   usercreater.New(&cfg, store.UserStorage, publisher),
 		Authenticator: authenticate.New(&cfg, store.UserStorage),
 	}
 }

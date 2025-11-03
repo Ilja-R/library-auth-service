@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"context"
 	"fmt"
+	"github.com/Ilja-R/library-auth-service/internal/adapter/driven/broker"
 
 	"github.com/Ilja-R/library-auth-service/internal/adapter/driven/dbstore"
 	"github.com/Ilja-R/library-auth-service/internal/config"
@@ -12,6 +13,23 @@ import (
 func initLayers(cfg config.Config) *App {
 	teardown := make([]func(), 0)
 	//log := logger.New(cfg.LogLevel, config.ServiceLabel, zap.WithCaller(true))
+
+	conn, ch, err := initRabbitMQ(&cfg.RabbitMQ)
+	if err != nil {
+		panic(err)
+	}
+
+	authQueue, err := initAuthQueue(ch)
+	authPublisher := broker.New(ch, authQueue)
+
+	teardown = append(teardown, func() {
+		if err := ch.Close(); err != nil {
+			fmt.Println(err)
+		}
+		if err := conn.Close(); err != nil {
+			fmt.Println(err)
+		}
+	})
 
 	db, err := initDB(*cfg.Postgres)
 	if err != nil {
@@ -28,7 +46,7 @@ func initLayers(cfg config.Config) *App {
 		}
 	})
 
-	uc := usecase.New(cfg, storage)
+	uc := usecase.New(cfg, storage, authPublisher)
 
 	httpSrv := initHTTPService(&cfg, uc)
 
